@@ -7,6 +7,16 @@ on:
         required: true
         type: string
         description: "La clé unique du projet dans SonarCloud"
+      sources:
+        required: false
+        type: string
+        default: "src"
+        description: "Chemin vers les sources à analyser"
+      tests:
+        required: false
+        type: string
+        default: "src"
+        description: "Chemin vers les tests"
     secrets:
       SONAR_TOKEN:
         required: true
@@ -32,16 +42,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Debug Secret
-        run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "❌ ERREUR: SONAR_TOKEN est vide ou inexistant !"
-            exit 1
-          else
-            echo "✅ SUCCÈS: SONAR_TOKEN est présent (longueur: ${#SONAR_TOKEN_VAR})"
-          fi
-        env:
-          SONAR_TOKEN_VAR: ${{ secrets.SONAR_TOKEN }}
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -51,8 +51,8 @@ jobs:
           args: >
             -Dsonar.projectKey=${{ inputs.project_key }}
             -Dsonar.organization=ram-sonarcloud
-            -Dsonar.sources=src
-            -Dsonar.tests=src
+            -Dsonar.sources=${{ inputs.sources }}
+            -Dsonar.tests=${{ inputs.tests }}
             -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
             -Dsonar.exclusions=node_modules/**,dist/**,coverage/**
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
