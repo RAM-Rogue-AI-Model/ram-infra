@@ -32,6 +32,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Debug Secret
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "❌ ERREUR: SONAR_TOKEN est vide ou inexistant !"
+            exit 1
+          else
+            echo "✅ SUCCÈS: SONAR_TOKEN est présent (longueur: ${#SONAR_TOKEN_VAR})"
+          fi
+        env:
+          SONAR_TOKEN_VAR: ${{ secrets.SONAR_TOKEN }}
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
