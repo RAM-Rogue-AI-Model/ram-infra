@@ -1,0 +1,48 @@
+name: "Template: SonarCloud Analysis"
+
+on:
+  workflow_call:
+    inputs:
+      project_key:
+        required: true
+        type: string
+        description: "La clé unique du projet dans SonarCloud"
+    secrets:
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+  sonar-scan:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ inputs.project_key }}
+            -Dsonar.organization=ram-sonarcloud
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
+            -Dsonar.exclusions=node_modules/**,dist/**,coverage/**
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
