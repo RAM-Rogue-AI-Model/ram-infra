@@ -42,13 +42,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate Sonar Token
-        run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "::error::SONAR_TOKEN is missing or empty. Please ensure it is set in the 'ram-api-gateway' repository secrets or organization secrets."
-            exit 1
-          fi
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -57,7 +50,7 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=${{ inputs.project_key }}
-            -Dsonar.organization=ram-sonarcloud
+            -Dsonar.organization=ram-rogue-ai-model
             -Dsonar.sources=${{ inputs.sources }}
             -Dsonar.tests=${{ inputs.tests }}
             -Dsonar.test.inclusions=**/*.test.ts,**/*.spec.ts
