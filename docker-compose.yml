@@ -17,6 +17,11 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - '8080:8080'
 
 networks:
   sonarnet:
