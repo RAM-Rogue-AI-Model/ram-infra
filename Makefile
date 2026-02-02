@@ -1,6 +1,6 @@
 # --- CONFIGURATION ---
 GITHUB_ORG = RAM-Rogue-AI-Model
-REPOS = ram-front ram-ms-logger ram-api-gateway ram-ms-user ram-ms-battle ram-ms-effect ram-ms-game ram-ms-player ram-ms-enemy ram-ms-item ram-infra
+REPOS = ram-ms-user ram-ms-battle ram-ms-effect ram-ms-game ram-ms-player ram-ms-enemy ram-ms-item ram-infra ram-api-gateway ram-front ram-ms-logger
 PARENT_DIR = ..
 
 # Couleurs pour le feedback visuel
@@ -12,18 +12,18 @@ RESET  := $(shell tput -Txterm sgr0)
 .PHONY: help init clone update install build start stop dev logs
 
 help:
-	@echo "${YELLOW}--- COMMANDES DEVOPS ---${RESET}"
 	@echo "${GREEN}make init${RESET}    : 🚀 SETUP COMPLET (Clone + Install + Update)"
 	@echo "${GREEN}make clone${RESET}   : Récupère les repos manquants"
 	@echo "${GREEN}make update${RESET}  : Git Pull + Docker Up"
 	@echo "${GREEN}make install${RESET} : pnpm install partout"
 	@echo "${GREEN}make build${RESET}   : Compile tout (TypeScript -> dist/)"
-	@echo "${GREEN}make start${RESET}   : Lance tout via PM2 (Prod)"
-	@echo "${GREEN}make dev${RESET}     : Mode Watch (Concurrently)"
-	@echo "${GREEN}make stop${RESET}    : Coupe tout"
+	@echo "${GREEN}make up${RESET}      : 🐳 Lance tous les services Docker"
+	@echo "${GREEN}make down${RESET}    : 🛑 Arrête tous les services Docker"
+	@echo "${GREEN}make logs${RESET}    : 📋 Affiche les logs Docker"
+	@echo "${GREEN}make rebuild${RESET} : 🔨 Rebuild les images Docker"
 
-init: clone setup-env install update
-	@echo "${GREEN}✨ Setup complet terminé ! Tu peux lancer 'make start' ou 'make dev'.${RESET}"
+init: clone setup-env setup-network install update
+	@echo "${GREEN}✨ Setup complet terminé ! Vous pouvez lancer 'make up'.${RESET}"
 
 clone:
 	@echo "${YELLOW}🔍 Vérification des repositories...${RESET}"
@@ -61,6 +61,10 @@ setup-env:
 	done
 	@echo "${GREEN}✅ Configuration des fichiers .env terminée.${RESET}"
 
+setup-network:
+	@docker network create ram-shared-network 2>/dev/null || true
+	@echo "${GREEN}🌐 Réseau Docker partagé 'ram-shared-network' actif.${RESET}"
+
 update:
 	@echo "${YELLOW}🚀 Mise à jour globale...${RESET}"
 	@for repo in $(REPOS); do \
@@ -88,6 +92,28 @@ install:
 		fi; \
 	done
 
+up:
+	@echo "${YELLOW}🐳 Lancement des services Docker...${RESET}"
+	@for repo in $(REPOS); do \
+		target_dir="$(PARENT_DIR)/$$repo"; \
+		if [ -d "$$target_dir" ] && [ -f "$$target_dir/docker-compose.yml" ]; then \
+			echo "   ▶️ Starting $$repo..."; \
+			docker compose -f "$$target_dir/docker-compose.yml" up -d --build --remove-orphans || echo "   ${RED}❌ Erreur Docker $$repo${RESET}"; \
+		fi; \
+	done
+	@echo "${GREEN}✅ Services Docker lancés.${RESET}"
+
+down:
+	@echo "${YELLOW}🛑 Arrêt des services Docker...${RESET}"
+	@for repo in $(REPOS); do \
+		target_dir="$(PARENT_DIR)/$$repo"; \
+		if [ -d "$$target_dir" ] && [ -f "$$target_dir/docker-compose.yml" ]; then \
+			echo "   ⏹️ Stopping $$repo..."; \
+			docker compose -f "$$target_dir/docker-compose.yml" down || echo "   ${RED}❌ Erreur Docker $$repo${RESET}"; \
+		fi; \
+	done
+	@echo "${GREEN}✅ Services Docker arrêtés.${RESET}"
+
 build:
 	@echo "${YELLOW}🔨 Compilation...${RESET}"
 	@for repo in $(REPOS); do \
@@ -98,31 +124,28 @@ build:
 		fi; \
 	done
 
-up:
-	@echo "${YELLOW}🚀 Lancement PM2...${RESET}"
-	@if ! command -v pm2 &> /dev/null; then echo "${RED}❌ PM2 manquant (pnpm add -g pm2)${RESET}"; exit 1; fi
+logs:
+	@echo "${YELLOW}📋 Logs Docker (Ctrl+C pour quitter)...${RESET}"
+	@repo=$(filter-out $@,$(MAKECMDGOALS)); \
+	if [ -z "$$repo" ]; then \
+		echo "${RED}Usage: make docker:logs <service-name>${RESET}"; \
+		echo "Exemple: make docker:logs ram-ms-user"; \
+	else \
+		target_dir="$(PARENT_DIR)/$$repo"; \
+		if [ -f "$$target_dir/docker-compose.yml" ]; then \
+			docker compose -f "$$target_dir/docker-compose.yml" logs -f; \
+		else \
+			echo "${RED}❌ docker-compose.yml non trouvé pour $$repo${RESET}"; \
+		fi; \
+	fi
+
+docker-rebuild:
+	@echo "${YELLOW}🔨 Rebuild des images Docker...${RESET}"
 	@for repo in $(REPOS); do \
 		target_dir="$(PARENT_DIR)/$$repo"; \
-		if [ -d "$$target_dir" ]; then \
-			echo "   ▶️ Starting $$repo..."; \
-			(cd "$$target_dir" && pm2 start npm --name "$$repo" -- run start); \
+		if [ -d "$$target_dir" ] && [ -f "$$target_dir/docker-compose.yml" ]; then \
+			echo "   🔧 Rebuilding $$repo..."; \
+			docker compose -f "$$target_dir/docker-compose.yml" build --no-cache || echo "   ${RED}❌ Erreur build $$repo${RESET}"; \
 		fi; \
 	done
-	@echo "${GREEN}✅ Services lancés.${RESET}"
-
-down:
-	@pm2 delete all || true
-	@echo "${GREEN}🛑 Tout est arrêté.${RESET}"
-
-dev:
-	@echo "${YELLOW}🔥 Lancement DEV...${RESET}"
-	@commands=""; \
-	for repo in $(REPOS); do \
-		if [ -d "$(PARENT_DIR)/$$repo" ]; then \
-			commands="$$commands \"cd $(PARENT_DIR)/$$repo && pnpm dev\""; \
-		fi; \
-	done; \
-	npx concurrently -n "ALL" -c "auto" $$commands
-
-logs:
-	@pm2 logs
+	@echo "${GREEN}✅ Images Docker rebuilt.${RESET}"
