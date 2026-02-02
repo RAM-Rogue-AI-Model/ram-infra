@@ -22,11 +22,9 @@ help:
 	@echo "${GREEN}make dev${RESET}     : Mode Watch (Concurrently)"
 	@echo "${GREEN}make stop${RESET}    : Coupe tout"
 
-# 0. INIT : La commande magique pour les nouveaux devs
-init: clone install update
+init: clone setup-env install update
 	@echo "${GREEN}✨ Setup complet terminé ! Tu peux lancer 'make start' ou 'make dev'.${RESET}"
 
-# 1. CLONE : Récupère les repos s'ils n'existent pas
 clone:
 	@echo "${YELLOW}🔍 Vérification des repositories...${RESET}"
 	@for repo in $(REPOS); do \
@@ -40,7 +38,29 @@ clone:
 	done
 	@echo "${GREEN}📂 Architecture validée.${RESET}"
 
-# 2. UPDATE : Git Pull + Docker Up
+setup-env:
+	@echo "${YELLOW}🔐 Génération des clés de sécurité partagées...${RESET}"
+	$(eval JWT_KEY := $(shell openssl rand -hex 32))
+	$(eval INTERNAL_KEY := $(shell openssl rand -hex 32))
+	@echo "   🔑 JWT_SECRET généré"
+	@echo "   🔑 INTERNAL_SECRET généré"
+	
+	@echo "${YELLOW}🔧 Configuration des fichiers .env...${RESET}"
+	@for repo in $(REPOS); do \
+		target_dir="$(PARENT_DIR)/$$repo"; \
+		if [ -d "$$target_dir" ]; then \
+			if [ ! -f "$$target_dir/.env" ] && [ -f "$$target_dir/.env.example" ]; then \
+				echo "   📄 Création .env pour $$repo (avec injection des secrets)"; \
+				sed -e "s/__GENERATE_JWT__/$(JWT_KEY)/g" \
+				    -e "s/__GENERATE_INTERNAL__/$(INTERNAL_KEY)/g" \
+				    "$$target_dir/.env.example" > "$$target_dir/.env"; \
+			elif [ -f "$$target_dir/.env" ]; then \
+				echo "   ✅ $$repo a déjà un .env (pas de modification)"; \
+			fi; \
+		fi; \
+	done
+	@echo "${GREEN}✅ Configuration des fichiers .env terminée.${RESET}"
+
 update:
 	@echo "${YELLOW}🚀 Mise à jour globale...${RESET}"
 	@for repo in $(REPOS); do \
@@ -58,7 +78,6 @@ update:
 	done
 	@echo "${GREEN}🎉 Tout est à jour !${RESET}"
 
-# 3. INSTALL : Dépendances
 install:
 	@echo "${YELLOW}📦 Installation des dépendances (pnpm)...${RESET}"
 	@for repo in $(REPOS); do \
@@ -69,7 +88,6 @@ install:
 		fi; \
 	done
 
-# 4. BUILD : TypeScript -> JS
 build:
 	@echo "${YELLOW}🔨 Compilation...${RESET}"
 	@for repo in $(REPOS); do \
