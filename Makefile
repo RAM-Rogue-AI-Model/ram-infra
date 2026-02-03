@@ -22,7 +22,7 @@ help:
 	@echo "${GREEN}make logs${RESET}    : 📋 Affiche les logs Docker"
 
 init: clone setup-env setup-network install update build up
-	@echo "${GREEN}✨ Setup complet terminé ! Vous pouvez lancer 'make up'.${RESET}"
+	@echo "${GREEN}✨ Setup complet terminé !${RESET}"
 
 clone:
 	@echo "${YELLOW}🔍 Vérification des repositories...${RESET}"
@@ -30,7 +30,7 @@ clone:
 		target_dir="$(PARENT_DIR)/$$repo"; \
 		if [ ! -d "$$target_dir" ]; then \
 			echo "   📥 Cloning $$repo..."; \
-			git clone "https://github.com/$(GITHUB_ORG)/$$repo.git" "$$target_dir" || echo "   ${RED}❌ Echec clone $$repo${RESET}"; \
+			git clone "git@github.com:$(GITHUB_ORG)/$$repo.git" "$$target_dir" || echo "   ${RED}❌ Echec clone $$repo${RESET}"; \
 		else \
 			echo "   ✅ $$repo existe déjà."; \
 		fi; \
@@ -102,12 +102,17 @@ up:
 	@echo "${YELLOW}🐳 Lancement des services Docker...${RESET}"
 	@for repo in $(REPOS); do \
 		target_dir="$(PARENT_DIR)/$$repo"; \
-		if [ -d "$$target_dir" ] && [ -f "$$target_dir/docker-compose.yml" ]; then \
-			echo "   ▶️ Starting $$repo..."; \
-			docker compose -f "$$target_dir/docker-compose.yml" up -d --remove-orphans || echo "   ${RED}❌ Erreur Docker $$repo${RESET}"; \
+		if [ -d "$$target_dir" ]; then \
+			if [ -f "$$target_dir/docker-compose.yml" ]; then \
+				echo "   ▶️ Starting $$repo..."; \
+				docker compose -f "$$target_dir/docker-compose.yml" up -d --remove-orphans || echo "   ${RED}❌ Erreur Docker $$repo${RESET}"; \
+			else \
+				echo "   ▶️ Starting $$repo (pnpm dev)..."; \
+				(cd "$$target_dir" && pnpm dev) || echo "   ${RED}❌ Erreur pnpm dev $$repo${RESET}"; \
+			fi; \
 		fi; \
 	done
-	@echo "${GREEN}✅ Services Docker lancés.${RESET}"
+	@echo "${GREEN}✅ Services Docker lancés. Vous pouvez vous rendre sur 'http://localhost:3000/ram'.${RESET}"
 
 down:
 	@echo "${YELLOW}🛑 Arrêt des services Docker...${RESET}"
