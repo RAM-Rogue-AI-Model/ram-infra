@@ -21,7 +21,7 @@ help:
 	@echo "${GREEN}make down${RESET}    : 🛑 Arrête tous les services Docker"
 	@echo "${GREEN}make logs${RESET}    : 📋 Affiche les logs Docker"
 
-init: clone setup-env setup-network install update build up
+init: clone setup-env setup-network update build up
 	@echo "${GREEN}✨ Setup complet terminé !${RESET}"
 
 clone:
@@ -83,7 +83,7 @@ install:
 		target_dir="$(PARENT_DIR)/$$repo"; \
 		if [ -d "$$target_dir" ]; then \
 			echo "   👉 $$repo..."; \
-			(cd "$$target_dir" && pnpm install --reporter=silent && pnpm run postinstall) || echo "   ${RED}❌ Erreur pnpm${RESET}"; \
+			(cd "$$target_dir" && pnpm install --reporter=silent) || echo "   ${RED}❌ Erreur pnpm${RESET}"; \
 		fi; \
 	done
 
