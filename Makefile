@@ -83,7 +83,7 @@ install:
 		target_dir="$(PARENT_DIR)/$$repo"; \
 		if [ -d "$$target_dir" ]; then \
 			echo "   👉 $$repo..."; \
-			(cd "$$target_dir" && pnpm install --reporter=silent) || echo "   ${RED}❌ Erreur pnpm${RESET}"; \
+			(cd "$$target_dir" && pnpm install --reporter=silent && pnpm run postinstall) || echo "   ${RED}❌ Erreur pnpm${RESET}"; \
 		fi; \
 	done
 
