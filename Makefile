@@ -21,7 +21,7 @@ help:
 	@echo "${GREEN}make down${RESET}    : 🛑 Arrête tous les services Docker"
 	@echo "${GREEN}make logs${RESET}    : 📋 Affiche les logs Docker"
 
-init: clone setup-env setup-network update build up
+init: clone setup-env setup-network install update build up
 	@echo "${GREEN}✨ Setup complet terminé !${RESET}"
 
 clone:
