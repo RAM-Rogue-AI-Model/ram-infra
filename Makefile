@@ -21,8 +21,11 @@ help:
 	@echo "${GREEN}make down${RESET}    : 🛑 Arrête tous les services Docker"
 	@echo "${GREEN}make logs${RESET}    : 📋 Affiche les logs Docker"
 
-init: clone setup-env setup-network install update build up
+init: clone setup-env setup-network build up
 	@echo "${GREEN}✨ Setup complet terminé !${RESET}"
+
+dev: clone setup-env setup-network update install build up
+	@echo "${GREEN}✨ Setup dev complet terminé !${RESET}"
 
 clone:
 	@echo "${YELLOW}🔍 Vérification des repositories...${RESET}"
@@ -108,7 +111,7 @@ up:
 				docker compose -f "$$target_dir/docker-compose.yml" up -d --remove-orphans || echo "   ${RED}❌ Erreur Docker $$repo${RESET}"; \
 			else \
 				echo "   ▶️ Starting $$repo (pnpm dev)..."; \
-				(cd "$$target_dir" && pnpm dev) || echo "   ${RED}❌ Erreur pnpm dev $$repo${RESET}"; \
+				(cd "$$target_dir" && pnpm install && pnpm dev) || echo "   ${RED}❌ Erreur pnpm dev $$repo${RESET}"; \
 			fi; \
 		fi; \
 	done

@@ -10,3 +10,7 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - ram-shared-network
+
+networks:
+  ram-shared-network:
+    external: true
