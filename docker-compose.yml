@@ -12,20 +12,3 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - ram-shared-network
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin_test
-    environment:
-      PMA_HOST: db # nom du conteneur
-      PMA_PORT: 3306 # change pas
-      PMA_USER: root # change pas
-      PMA_PASSWORD: ram_password # change pas
-    ports:
-      - '8080:80'
-    networks:
-      - ram-shared-network
-
-networks:
-  ram-shared-network:
-    external: true
